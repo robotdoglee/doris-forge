@@ -200,8 +200,8 @@ export class Repo {
   readonly comments = new Map<number, CommentRec[]>();
   nextNumber = 1;
   private readonly commitCache = new Map<string, CommitInfo>();
-  /** Cached upload-pack payloads, keyed by a description of the want set; cleared on any ref move. */
-  readonly packCache = new Map<string, Buffer>();
+  /** Cached fetch results (pack + selection), keyed by the want set; cleared on any ref move. */
+  readonly packCache = new Map<string, { pack: Buffer; shallow: Set<string>; objects: Set<string> }>();
 
   constructor(id: number, name: string, description: string, isPrivate: boolean) {
     this.id = id;

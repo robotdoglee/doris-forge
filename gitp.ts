@@ -512,7 +512,9 @@ function sidebandPackets(data: Buffer, band: number): Buffer[] {
 function fetchResponse(repo: Repo, packets: Pkt[]): Buffer {
   const args = parseFetchArgs(packets);
   const clientShallow = new Set(args.shallow);
-  const selection = selectFetchObjects(repo, args.wants, args.haves, clientShallow, args.depth);
+  const cacheKey = `fetch|${[...args.wants].sort().join(',')}|${[...args.haves].sort().join(',')}|${args.depth ?? 'full'}|${[...clientShallow].sort().join(',')}`;
+  const cached = repo.packCache.get(cacheKey);
+  const selection = cached ?? selectFetchObjects(repo, args.wants, args.haves, clientShallow, args.depth);
 
   const parts: Buffer[] = [];
   // acknowledgments
@@ -537,9 +539,10 @@ function fetchResponse(repo: Repo, packets: Pkt[]): Buffer {
     }
   }
   // packfile
-  const cacheKey = `fetch|${[...args.wants].sort().join(',')}|${[...args.haves].sort().join(',')}|${args.depth ?? 'full'}|${[...clientShallow].sort().join(',')}`;
-  let pack = repo.packCache.get(cacheKey);
-  if (pack === undefined) {
+  let pack: Buffer;
+  if (cached !== undefined) {
+    pack = cached.pack;
+  } else {
     const objects = [...selection.objects]
       .map((oid) => {
         const object = repo.getObject(oid);
@@ -547,7 +550,7 @@ function fetchResponse(repo: Repo, packets: Pkt[]): Buffer {
       })
       .filter((entry): entry is { oid: string; type: ObjType; data: Buffer } => entry !== null);
     pack = writePack(objects);
-    repo.packCache.set(cacheKey, pack);
+    repo.packCache.set(cacheKey, { pack, shallow: selection.shallow, objects: selection.objects });
   }
   parts.push(pktText('packfile\n'));
   parts.push(...sidebandPackets(pack, 1));
