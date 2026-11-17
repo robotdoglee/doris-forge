@@ -247,12 +247,11 @@ export function writePack(objects: readonly (PackObject & { oid: string })[]): B
   head.writeUInt32BE(objects.length, 8);
   const parts: Buffer[] = [head];
   for (const object of objects) {
-    const size = object.data.length;
     const typeId = TYPE_IDS[object.type];
     const bytes: number[] = [];
-    let first = (typeId << 4) | (size & 0x0f);
-    size >>= 4;
-    let rest = size;
+    let rest = object.data.length;
+    let first = (typeId << 4) | (rest & 0x0f);
+    rest >>= 4;
     if (rest > 0) first |= 0x80;
     bytes.push(first);
     while (rest > 0) {
