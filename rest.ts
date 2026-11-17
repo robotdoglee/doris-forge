@@ -9,7 +9,7 @@
 //   - issues and pull requests share one number sequence per repository, as on GitHub
 //   - list endpoints paginate with Link rel="next"/"last" headers on this origin
 
-import { Forge, Repo, buildCommit, type IssueRec, type PullRec } from './store.ts';
+import { Forge, Repo, buildCommit, lineDiffCounts, type IssueRec, type PullRec } from './store.ts';
 import { parseJsonBody, type Req, type Res } from './http.ts';
 
 const NOT_FOUND = { message: 'Not Found' };
